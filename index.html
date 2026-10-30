@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<!-- 1분 MBTI 테스트 랜딩페이지. 밈 플로우차트 기반 분기형 퀴즈와 60초 타이머를 단일 파일로 구현 -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>1분 MBTI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@500;700;900&display=swap">
+<style>
+  /* 레이아웃: 한 화면 세로 스택. 상단 고정 타이머, 중앙 왼쪽정렬 질문, 하단 선택지 카드. 결과 화면만 검정으로 반전 */
+  :root {
+    --bg: #FFD400;        /* 경고등 노랑 */
+    --ink: #000000;       /* 잉크 */
+    --paper: #FFFFFF;     /* 선택지 카드 */
+    --alarm: #FF2D20;     /* 마지막 3초 */
+    --dim: #6E5F00;       /* 노랑 위 보조 텍스트 */
+    --result-bg: #000000;
+    --result-fg: #FFD400;
+    --display: 'Black Han Sans', 'Noto Sans KR', system-ui, sans-serif;
+    --body: 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+    --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+    --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-weight: 500;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    transition: background .35s;
+  }
+  body.urgent { background: var(--alarm); }
+  body.result { background: var(--result-bg); color: var(--result-fg); }
+
+  .screen {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding-left: var(--gutter-l);
+    padding-right: var(--gutter-r);
+    padding-block: 20px 28px;
+    max-width: 560px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  [hidden] { display: none !important; }
+
+  /* 타이머 */
+  .timer {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 14px;
+    padding-block: 6px 10px;
+    background: inherit;
+  }
+  .bar {
+    height: 14px;
+    border: 3px solid var(--ink);
+    background: transparent;
+    overflow: hidden;
+  }
+  .bar > i {
+    display: block;
+    height: 100%;
+    width: 100%;
+    background: var(--ink);
+    transform-origin: left;
+    will-change: transform;
+  }
+  .clock {
+    font-family: var(--display);
+    font-size: 40px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    min-width: 2.2ch;
+    text-align: right;
+  }
+  body.urgent .clock { animation: thump .5s steps(2, end) infinite; }
+  @keyframes thump { 50% { transform: scale(1.12); } }
+
+  /* 인트로 */
+  .hero { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 26px; padding-block: 24px; }
+  .title {
+    font-family: var(--display);
+    font-size: clamp(84px, 26vw, 150px);
+    line-height: .86;
+    letter-spacing: -.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .title small { display: block; font-size: .42em; letter-spacing: 0; margin-bottom: .18em; }
+  .lede { font-size: 19px; font-weight: 700; margin: 0; max-width: 24em; }
+  .lede b { font-weight: 900; }
+  .rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; color: var(--dim); font-size: 15px; font-weight: 700; }
+
+  .btn {
+    appearance: none;
+    font: inherit;
+    font-family: var(--display);
+    font-size: 30px;
+    line-height: 1;
+    padding: 20px 24px;
+    border: 4px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 8px 8px 0 0 var(--paper);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn:active { transform: translate(6px, 6px); box-shadow: 2px 2px 0 0 var(--paper); }
+  .btn:focus-visible, .choice:focus-visible { outline: 4px dashed var(--ink); outline-offset: 4px; }
+  body.result .btn { background: var(--result-fg); color: var(--result-bg); border-color: var(--result-fg); box-shadow: 8px 8px 0 0 #3a3200; }
+  body.result .btn.ghost { background: transparent; color: var(--result-fg); box-shadow: none; }
+  body.result .btn:focus-visible, body.result .choice:focus-visible { outline-color: var(--result-fg); }
+
+  /* 퀴즈 */
+  .quiz { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 28px; padding-block: 20px; }
+  .qnum { font-weight: 900; font-size: 15px; color: var(--dim); margin: 0; }
+  body.urgent .qnum { color: #5a0800; }
+  .question {
+    font-family: var(--display);
+    font-size: clamp(44px, 12vw, 72px);
+    line-height: 1.02;
+    margin: 0;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+    word-break: keep-all;
+  }
+  .choices { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+  .choice {
+    appearance: none;
+    font: inherit;
+    font-weight: 700;
+    font-size: 21px;
+    line-height: 1.3;
+    text-align: left;
+    width: 100%;
+    padding: 18px 20px;
+    border: 4px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: start;
+    box-shadow: 6px 6px 0 0 var(--ink);
+    word-break: keep-all;
+    transition: transform .08s, box-shadow .08s;
+  }
+  .choice:active { transform: translate(5px, 5px); box-shadow: 1px 1px 0 0 var(--ink); }
+  .choice kbd {
+    font-family: var(--display);
+    font-size: 22px;
+    line-height: 1;
+    min-width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    background: var(--ink);
+    color: var(--paper);
+    margin-top: 1px;
+  }
+  .swap { animation: swap .22s ease-out; }
+  @keyframes swap { from { opacity: 0; transform: translateX(28px); } }
+
+  /* 결과 */
+  .outcome { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 24px; padding-block: 20px; }
+  .verdict { font-weight: 900; font-size: 16px; margin: 0; opacity: .8; }
+  .type {
+    font-family: var(--display);
+    font-size: clamp(110px, 34vw, 190px);
+    line-height: .85;
+    margin: 0;
+    letter-spacing: -.03em;
+    animation: stamp .35s cubic-bezier(.2, 1.4, .4, 1);
+  }
+  @keyframes stamp { from { transform: scale(1.6) rotate(-6deg); opacity: 0; } }
+  .tagline { font-size: 22px; font-weight: 700; margin: 0; word-break: keep-all; text-wrap: balance; }
+  .path { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 0; font-size: 14px; font-weight: 700; opacity: .75; }
+  .path li + li::before { content: "›"; margin: 0 8px; opacity: .6; }
+  .actions { display: grid; gap: 14px; margin-top: 8px; }
+  .toast { font-size: 14px; font-weight: 700; margin: 0; min-height: 1.4em; opacity: .85; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .swap, .type, body.urgent .clock { animation: none; }
+    body, .btn, .choice { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main class="screen" id="app">
+
+  <!-- 인트로 -->
+  <section class="hero" id="intro">
+    <h1 class="title"><small>1분 안에 끝내는</small>MBTI</h1>
+    <p class="lede">질문은 많아야 <b>여섯 개</b>. 한 문제당 <b>10초</b>. 고민하는 순간 끝난다.</p>
+    <ul class="rules">
+      <li>생각하지 말고 눌러. 첫 느낌이 정답이야.</li>
+      <li>10초 안에 못 고르면 결과 없음. 다시 처음부터.</li>
+      <li>키보드 1·2·3으로도 고를 수 있어.</li>
+    </ul>
+    <button class="btn" id="start" type="button"><span>시작</span><span aria-hidden="true">→</span></button>
+  </section>
+
+  <!-- 퀴즈 -->
+  <section id="quizWrap" hidden>
+    <div class="timer" aria-live="off">
+      <div class="bar" role="progressbar" aria-label="남은 시간" aria-valuemin="0" aria-valuemax="10" aria-valuenow="10"><i id="fill"></i></div>
+      <div class="clock" id="clock">10</div>
+    </div>
+    <div class="quiz" id="quiz">
+      <p class="qnum" id="qnum"></p>
+      <h2 class="question" id="qtext"></h2>
+      <ul class="choices" id="choices"></ul>
+    </div>
+  </section>
+
+  <!-- 결과 -->
+  <section class="outcome" id="resultWrap" hidden>
+    <p class="verdict" id="verdict"></p>
+    <h2 class="type" id="typeText"></h2>
+    <p class="tagline" id="tagline"></p>
+    <ul class="path" id="path"></ul>
+    <div class="actions">
+      <button class="btn" id="share" type="button"><span>결과 복사해서 자랑하기</span><span aria-hidden="true">⧉</span></button>
+      <button class="btn ghost" id="retry" type="button"><span>다시 하기</span><span aria-hidden="true">↺</span></button>
+    </div>
+    <p class="toast" id="toast"></p>
+  </section>
+
+  <!-- 타임오버 -->
+  <section class="outcome" id="overWrap" hidden>
+    <p class="verdict">10초 경과</p>
+    <h2 class="type" style="font-size:clamp(72px,20vw,130px)">타임<br>오버</h2>
+    <p class="tagline">10초 안에 자기 자신도 모르겠다면, 그게 바로 너의 MBTI일지도.</p>
+    <div class="actions">
+      <button class="btn" id="retry2" type="button"><span>다시 도전</span><span aria-hidden="true">↺</span></button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // 플로우차트 트리. 원본 밈을 한국 정서에 맞게 바꿈. 리프는 네 글자 유형 문자열.
+  const TREE = {
+    start:   { q: '주변에서 "너 좀 특이하다" 소리 들어?', a: [['응', 'anx'], ['아니', 'rules']] },
+    anx:     { q: '모임 가면 구석에서 폰만 보는 편?',       a: [['응', 'logic'], ['아니', 'bad']] },
+    logic:   { q: '감정보다 논리가 먼저야?',               a: [['응', 'emo1'], ['아니', 'emo2']] },
+    emo1:    { q: '눈물 많아?',                          a: [['아니', 'really'], ['응', 'INFJ']] },
+    emo2:    { q: '눈물 많아?',                          a: [['응', 'INFJ'], ['*미친듯이 울음*', 'INFP']] },
+    really:  { q: '진짜로?',                             a: [['*감정은 생존에 비효율적인 변수라고 3분간 설명함*', 'INTJ'], ['설명하기엔 좀 길어', 'machine']] },
+    machine: { q: '고장 난 거 보면 일단 뜯어봐?',           a: [['당연, 이미 뜯었음', 'ISTP'], ['원리는 궁금한데 귀찮아', 'INTP']] },
+    bad:     { q: '팩폭 날려서 욕먹은 적 있어?',            a: [['아니', 'INFJ'], ['아마 그런듯', 'lazy']] },
+    lazy:    { q: '미루기 장인이야?',                      a: [['아니', 'ENTJ'], ['ㅇㅇ', 'chakra']] },
+    chakra:  { q: '사주·타로 믿어?',                      a: [['개소리지', 'ENTP'], ['나 올해 삼재래ㅠㅠ 부적 사야 하나', 'ENFP']] },
+    rules:   { q: '규칙은?',                             a: [['깨라고 있는 거지', 'xsport'], ['다 같이 살려면 필요하지', 'enforce'], ['나만 안 귀찮으면 상관없음', 'onenight']] },
+    xsport:  { q: '번지점프 하자고 하면?',                 a: [['당장 가', 'ESTP'], ['그 돈으로 맛집이나 가자', 'quiet']] },
+    quiet:   { q: '그 맛집, 누구랑?',                     a: [['다 불러서 떠들썩하게', 'ESFP'], ['혼자 조용히', 'ISFP']] },
+    enforce: { q: '규칙 안 지키는 사람 보면?',              a: [['바로 한마디 함. 크게.', 'ESTJ'], ['속으로 메모함. 조용히.', 'ISTJ']] },
+    onenight:{ q: '처음 본 사람이랑 바로 술 마시러 갈 수 있어?', a: [['ㄱㅊ네', 'college'], ['*엄마한테 먼저 전화함*', 'ISFJ']] },
+    college: { q: '사회 문제 얘기 나오면 불타오르는 편?',     a: [['응, 할 말 많음', 'ENFJ'], ['아니, 그냥 다들 사이좋게', 'ESFJ']] },
+  };
+
+  const TAGLINE = {
+    INTJ: '감정은 생존에 비효율적인 변수. 3분 설명 가능. 질문은 안 받음.',
+    ISTP: '고장 났다는 말 듣기 전에 이미 뜯어봄. 다시 조립은 나중에.',
+    INTP: '원리는 궁금한데 뜯기는 귀찮아. 설명하기엔 좀 긴데… 들을 시간 있어?',
+    INFJ: '논리와 감정 사이에서 조용히 세상을 구하는 중. 티는 안 냄.',
+    INFP: '*미친듯이 울음* 근데 그게 매력이라는 걸 본인만 모름.',
+    ENTJ: '미루기? 그게 뭔데. 이미 올해 계획 다 세워놨음.',
+    ENTP: '사주·타로는 개소리지. 근데 그 주제로 세 시간 토론은 가능.',
+    ENFP: '올해 삼재래ㅠㅠ 부적 사러 가는 길에 새 취미 세 개 생김.',
+    ESTP: '번지점프? 당장 가. 보험은 안 듦. 후회는 나중 일.',
+    ESFP: '맛집 가는데 혼자? 그게 무슨 뜻이야? 파티는 내가 있는 곳에서 시작됨.',
+    ISFP: '혼자 조용히 맛집 가서 사진 50장 찍고 아무한테도 안 보여줌.',
+    ESTJ: '규칙 안 지키는 사람 보면 바로 한마디 함. 크게. 당연한 거 아냐?',
+    ISTJ: '규칙 안 지키는 사람 보면 속으로 메모함. 조용히, 확실하게, 영구 보존.',
+    ENFJ: '사회 문제 얘기만 나오면 불타오름. 세상을 바꾸는 건 결국 사람이라 믿음.',
+    ESFJ: '짜증만 안 나면 다 괜찮아. 우리 다 같이 사이좋게 지내자.',
+    ISFJ: '*엄마한테 먼저 전화함* 그리고 모두에게 간식을 나눠줌.',
+  };
+
+  const LIMIT = 10; // 문제당 제한 시간(초)
+  const $ = id => document.getElementById(id);
+  const intro = $('intro'), quizWrap = $('quizWrap'), resultWrap = $('resultWrap'), overWrap = $('overWrap');
+  const fill = $('fill'), clock = $('clock'), bar = document.querySelector('.bar');
+
+  let node, step, path, startedAt, qStartedAt, raf, audio, lastTick, finished;
+
+  function show(el) {
+    [intro, quizWrap, resultWrap, overWrap].forEach(s => s.hidden = s !== el);
+    window.scrollTo(0, 0);
+  }
+
+  function begin() {
+    node = 'start'; step = 0; path = []; finished = false;
+    document.body.classList.remove('result', 'urgent');
+    startedAt = performance.now();
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (e) { audio = null; }
+    show(quizWrap);
+    render();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+  }
+
+  function tick() {
+    if (finished) return;
+    const elapsed = (performance.now() - qStartedAt) / 1000;
+    const left = Math.max(0, LIMIT - elapsed);
+    fill.style.transform = `scaleX(${left / LIMIT})`;
+    const sec = Math.ceil(left);
+    if (sec !== lastTick) {
+      lastTick = sec;
+      clock.textContent = sec;
+      bar.setAttribute('aria-valuenow', sec);
+      const urgent = left <= 3;
+      document.body.classList.toggle('urgent', urgent);
+      if (urgent && sec > 0) beep(sec <= 1 ? 880 : 660);
+    }
+    if (left <= 0) { timeOver(); return; }
+    raf = requestAnimationFrame(tick);
+  }
+
+  function beep(freq) {
+    if (!audio) return;
+    try {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = 'square'; o.frequency.value = freq;
+      g.gain.setValueAtTime(.05, audio.currentTime);
+      g.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + .09);
+      o.connect(g).connect(audio.destination);
+      o.start(); o.stop(audio.currentTime + .1);
+    } catch (e) {}
+  }
+
+  function render() {
+    const n = TREE[node];
+    step += 1;
+    qStartedAt = performance.now(); lastTick = -1;
+    document.body.classList.remove('urgent');
+    fill.style.transform = 'scaleX(1)';
+    $('qnum').textContent = `Q${step}`;
+    $('qtext').textContent = n.q;
+    const list = $('choices');
+    list.innerHTML = '';
+    n.a.forEach(([label, next], i) => {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'choice';
+      b.innerHTML = `<kbd>${i + 1}</kbd><span></span>`;
+      b.querySelector('span').textContent = label;
+      b.addEventListener('click', () => choose(label, next));
+      li.appendChild(b); list.appendChild(li);
+    });
+    const q = $('quiz');
+    q.classList.remove('swap'); void q.offsetWidth; q.classList.add('swap');
+  }
+
+  function choose(label, next) {
+    if (finished) return;
+    path.push({ q: TREE[node].q, a: label });
+    if (TREE[next]) { node = next; render(); }
+    else finish(next);
+  }
+
+  function finish(type) {
+    finished = true;
+    cancelAnimationFrame(raf);
+    const secs = Math.max(1, Math.round((performance.now() - startedAt) / 1000));
+    document.body.classList.remove('urgent');
+    document.body.classList.add('result');
+    $('verdict').textContent = `${secs}초 만에 판정 완료`;
+    $('typeText').textContent = type;
+    $('tagline').textContent = TAGLINE[type];
+    const p = $('path'); p.innerHTML = '';
+    path.forEach(({ a }) => { const li = document.createElement('li'); li.textContent = a; p.appendChild(li); });
+    $('toast').textContent = '';
+    $('share').dataset.text = `나는 ${secs}초 만에 ${type} 판정받음.\n"${TAGLINE[type]}"\n너도 1분 안에 해봐 → ${location.href.split('#')[0]}`;
+    show(resultWrap);
+  }
+
+  function timeOver() {
+    finished = true;
+    cancelAnimationFrame(raf);
+    document.body.classList.remove('urgent');
+    document.body.classList.add('result');
+    show(overWrap);
+  }
+
+  function reset() {
+    document.body.classList.remove('result', 'urgent');
+    fill.style.transform = 'scaleX(1)';
+    clock.textContent = LIMIT;
+    show(intro);
+  }
+
+  $('start').addEventListener('click', begin);
+  $('retry').addEventListener('click', begin);
+  $('retry2').addEventListener('click', begin);
+
+  $('share').addEventListener('click', async e => {
+    const text = e.currentTarget.dataset.text || '';
+    const toast = $('toast');
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.textContent = '복사됐어. 이제 단톡방에 던져.';
+    } catch (err) {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {}
+      document.body.removeChild(ta);
+      toast.textContent = ok ? '복사됐어. 이제 단톡방에 던져.' : '복사가 막혀 있어. 화면을 캡처해서 공유해줘.';
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (quizWrap.hidden || finished) return;
+    const i = parseInt(e.key, 10);
+    if (i >= 1 && i <= 3) {
+      const b = document.querySelectorAll('.choice')[i - 1];
+      if (b) b.click();
+    }
+  });
+
+  // 결과 화면에서 Enter로 재시작
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (!resultWrap.hidden || !overWrap.hidden)) begin();
+  });
+
+  reset();
+</script>
+</body>
+</html>
