@@ -9,3 +9,12 @@
 - [x] 모바일(400px) 레이아웃 확인
 - [x] 트리 리프 노드 검증 스크립트로 16개 유형 확인
 - [x] 스크린샷으로 렌더링 확인
+
+## 관리자 페이지
+- [x] 방문/결과/타임오버 이벤트 수집 코드 (index.html, config.js)
+- [x] Supabase 테이블·RLS·집계 함수 SQL (supabase.sql)
+- [x] 관리자 페이지 admin.html (접속자, 평균 시간, 유형별 분포)
+- [x] 목 데이터로 렌더링 확인
+- [ ] 사용자가 Supabase 프로젝트 생성 후 config.js에 URL·키 입력
+- [ ] 실제 DB 연결 후 stats() 응답 확인
+- [ ] 저장소 공개 전환 후 GitHub Pages 활성화
