@@ -259,6 +259,7 @@
 
 </main>
 
+<script src="config.js"></script>
 <script>
   // 플로우차트 트리. 원본 밈을 한국 정서에 맞게 바꿈. 리프는 네 글자 유형 문자열.
   const TREE = {
@@ -298,6 +299,20 @@
     ESFJ: '짜증만 안 나면 다 괜찮아. 우리 다 같이 사이좋게 지내자.',
     ISFJ: '*엄마한테 먼저 전화함* 그리고 모두에게 간식을 나눠줌.',
   };
+
+  // 통계 수집. config.js에 Supabase 정보가 없으면 아무것도 보내지 않음
+  const CFG = window.MBTI_CONFIG || {};
+  const SESSION = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2));
+  function track(type, extra) {
+    if (!CFG.supabaseUrl || !CFG.supabaseKey) return;
+    try {
+      fetch(CFG.supabaseUrl + "/rest/v1/events", {
+        method: "POST", keepalive: true,
+        headers: { apikey: CFG.supabaseKey, Authorization: "Bearer " + CFG.supabaseKey, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify(Object.assign({ session: SESSION, type }, extra || {})),
+      }).catch(() => {});
+    } catch (e) {}
+  }
 
   const LIMIT = 10; // 문제당 제한 시간(초)
   const $ = id => document.getElementById(id);
@@ -395,6 +410,7 @@
     path.forEach(({ a }) => { const li = document.createElement('li'); li.textContent = a; p.appendChild(li); });
     $('toast').textContent = '';
     $('share').dataset.text = `나는 ${secs}초 만에 ${type} 판정받음.\n"${TAGLINE[type]}"\n너도 1분 안에 해봐 → ${location.href.split('#')[0]}`;
+    track('result', { mbti: type, seconds: secs });
     show(resultWrap);
   }
 
@@ -403,6 +419,7 @@
     cancelAnimationFrame(raf);
     document.body.classList.remove('urgent');
     document.body.classList.add('result');
+    track('timeout', { seconds: Math.max(1, Math.round((performance.now() - startedAt) / 1000)) });
     show(overWrap);
   }
 
@@ -448,6 +465,7 @@
   });
 
   reset();
+  track('visit');
 </script>
 </body>
 </html>
