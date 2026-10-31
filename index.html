@@ -310,15 +310,15 @@
     ISFJ: '*엄마한테 먼저 전화함* 그리고 모두에게 간식을 나눠줌.',
   };
 
-  // 통계 수집. config.js에 Supabase 정보가 없으면 아무것도 보내지 않음
+  // 통계 수집. config.js에 Apps Script 주소가 없으면 아무것도 보내지 않음.
+  // no-cors + 본문만 보내는 단순 요청이라 사전 요청(preflight) 없이 Apps Script에 바로 닿음
   const CFG = window.MBTI_CONFIG || {};
   const SESSION = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2));
   function track(type, extra) {
-    if (!CFG.supabaseUrl || !CFG.supabaseKey) return;
+    if (!CFG.endpoint) return;
     try {
-      fetch(CFG.supabaseUrl + "/rest/v1/events", {
-        method: "POST", keepalive: true,
-        headers: { apikey: CFG.supabaseKey, Authorization: "Bearer " + CFG.supabaseKey, "Content-Type": "application/json", Prefer: "return=minimal" },
+      fetch(CFG.endpoint, {
+        method: "POST", mode: "no-cors", keepalive: true,
         body: JSON.stringify(Object.assign({ session: SESSION, type }, extra || {})),
       }).catch(() => {});
     } catch (e) {}

@@ -12,11 +12,11 @@
 
 ## 관리자 페이지
 - [x] 방문/결과/타임오버 이벤트 수집 코드 (index.html, config.js)
-- [x] Supabase 테이블·RLS·집계 함수 SQL (supabase.sql)
+- [x] Google Apps Script 수집·집계 코드 (apps-script.gs)
 - [x] 관리자 페이지 admin.html (접속자, 평균 시간, 유형별 분포)
 - [x] 목 데이터로 렌더링 확인
-- [ ] 사용자가 Supabase 프로젝트 생성 후 config.js에 URL·키 입력
-- [ ] 실제 DB 연결 후 stats() 응답 확인
+- [ ] 사용자가 시트 생성 후 Apps Script 웹 앱 배포, config.js에 endpoint 입력
+- [ ] 실제 연결 후 관리자 페이지 집계 표시 확인
 - [x] 저장소 공개 전환 후 GitHub Pages 활성화 (https://cocobanana-spec.github.io/1min-mbti/)
 - [x] 유형별 공유 결과 페이지와 og 이미지 생성 (build.js)
 - [x] 메인 페이지 og 태그 추가

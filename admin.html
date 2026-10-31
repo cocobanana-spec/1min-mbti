@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- 1분 MBTI 관리자 페이지. Supabase stats() 함수를 호출해 접속자 수, 평균 소요 시간, 유형별 결과 분포를 보여줌 -->
+<!-- 1분 MBTI 관리자 페이지. Google Apps Script 웹 앱에서 집계를 받아 접속자 수, 평균 소요 시간, 유형별 결과 분포를 보여줌 -->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -95,21 +95,21 @@
   <!-- 설정 전 안내 -->
   <section class="panel" id="setup" hidden>
     <h2>아직 통계 저장소가 연결되지 않았어요</h2>
-    <p>랜딩페이지는 서버가 없어서 접속 기록을 남기려면 무료 데이터베이스인 Supabase가 필요합니다. 5분이면 끝납니다.</p>
+    <p>랜딩페이지는 서버가 없어서 접속 기록을 남기려면 Google 스프레드시트를 저장소로 씁니다. Google 계정만 있으면 5분이면 끝납니다.</p>
     <ol>
-      <li>supabase.com 에서 GitHub 계정으로 가입하고 새 프로젝트를 만듭니다. 리전은 Northeast Asia (Seoul)을 고릅니다.</li>
-      <li>프로젝트 화면 왼쪽 SQL Editor를 열고, 저장소의 <code>supabase.sql</code> 내용을 전부 붙여넣어 실행합니다.</li>
-      <li>왼쪽 Settings 메뉴에서 API로 들어가 Project URL과 anon public 키를 복사합니다.</li>
-      <li>저장소의 <code>config.js</code>에 두 값을 붙여넣고 저장한 뒤 커밋합니다.</li>
+      <li>Google 드라이브에서 새 스프레드시트를 만듭니다. 이름은 아무거나 괜찮습니다.</li>
+      <li>시트 메뉴에서 확장 프로그램 &gt; Apps Script를 엽니다. 기본 코드를 지우고 저장소의 <code>apps-script.gs</code> 내용을 전부 붙여넣은 뒤 저장합니다.</li>
+      <li>오른쪽 위 배포 &gt; 새 배포를 누르고 유형을 웹 앱으로 고릅니다. 실행 주체는 나, 액세스 권한은 모든 사용자로 두고 배포합니다. 권한 허용 창이 뜨면 허용합니다.</li>
+      <li>나온 웹 앱 URL을 저장소의 <code>config.js</code>에 붙여넣고 커밋합니다. 주소는 <code>/exec</code>로 끝납니다.</li>
     </ol>
-    <p>저장이 반영되면 이 페이지가 자동으로 통계를 보여줍니다.</p>
+    <p>저장이 반영되면 이 페이지가 자동으로 통계를 보여줍니다. 원본 기록은 시트의 events 탭에서 바로 볼 수 있습니다.</p>
   </section>
 
   <!-- 오류 -->
   <section class="panel" id="error" hidden>
     <h2 class="err">통계를 불러오지 못했어요</h2>
     <p id="errorMsg"></p>
-    <p>config.js의 주소와 키가 맞는지, supabase.sql이 실행됐는지 확인해 주세요.</p>
+    <p>config.js의 주소가 /exec로 끝나는지, 웹 앱 배포의 액세스 권한이 모든 사용자인지 확인해 주세요. 코드를 고쳤다면 새 배포를 다시 만들어야 반영됩니다.</p>
   </section>
 
   <!-- 통계 -->
@@ -140,14 +140,10 @@
   }
 
   async function load() {
-    if (!CFG.supabaseUrl || !CFG.supabaseKey) { showOnly('setup'); return; }
+    if (!CFG.endpoint) { showOnly('setup'); return; }
     $('refresh').disabled = true;
     try {
-      const res = await fetch(CFG.supabaseUrl + '/rest/v1/rpc/stats', {
-        method: 'POST',
-        headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + CFG.supabaseKey, 'Content-Type': 'application/json' },
-        body: '{}',
-      });
+      const res = await fetch(CFG.endpoint + (CFG.endpoint.includes('?') ? '&' : '?') + 't=' + Date.now(), { method: 'GET', redirect: 'follow' });
       if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await res.text()).slice(0, 200));
       render(await res.json());
       showOnly('stats');
