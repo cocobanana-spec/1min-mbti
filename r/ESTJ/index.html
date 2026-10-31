@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<!-- ESTJ 공유용 결과 페이지. build.js가 생성하므로 직접 수정하지 말 것 -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>나 ESTJ 나옴 (1분 MBTI)</title>
+<meta name="description" content="규칙 안 지키는 사람 보면 바로 한마디 함. 크게. 당연한 거 아냐?">
+<link rel="canonical" href="https://cocobanana-spec.github.io/1min-mbti/r/ESTJ/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="1분 MBTI">
+<meta property="og:title" content="나 ESTJ 나옴 (1분 MBTI)">
+<meta property="og:description" content="규칙 안 지키는 사람 보면 바로 한마디 함. 크게. 당연한 거 아냐?">
+<meta property="og:url" content="https://cocobanana-spec.github.io/1min-mbti/r/ESTJ/">
+<meta property="og:image" content="https://cocobanana-spec.github.io/1min-mbti/og/ESTJ.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="나 ESTJ 나옴 (1분 MBTI)">
+<meta name="twitter:description" content="규칙 안 지키는 사람 보면 바로 한마디 함. 크게. 당연한 거 아냐?">
+<meta name="twitter:image" content="https://cocobanana-spec.github.io/1min-mbti/og/ESTJ.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@700;900&display=swap">
+<style>
+  :root{--bg:#000;--fg:#FFD400;--display:'Black Han Sans','Noto Sans KR',system-ui,sans-serif;--body:'Noto Sans KR',system-ui,sans-serif;color-scheme:dark}
+  *{box-sizing:border-box}html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--fg);font-family:var(--body);font-weight:700;line-height:1.4;-webkit-font-smoothing:antialiased}
+  .screen{min-height:100%;max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px;display:flex;flex-direction:column;justify-content:center;gap:24px}
+  .verdict{font-size:16px;margin:0;opacity:.8}
+  .type{font-family:var(--display);font-size:clamp(110px,34vw,190px);line-height:.85;margin:0;letter-spacing:-.03em}
+  .tagline{font-size:22px;margin:0;word-break:keep-all;text-wrap:balance}
+  .btn{font-family:var(--display);font-size:30px;line-height:1;padding:20px 24px;border:4px solid var(--fg);background:var(--fg);color:var(--bg);text-decoration:none;display:flex;justify-content:space-between;align-items:center;gap:12px;box-shadow:8px 8px 0 0 #3a3200;margin-top:8px}
+  .btn:active{transform:translate(6px,6px);box-shadow:2px 2px 0 0 #3a3200}
+  .btn:focus-visible{outline:4px dashed var(--fg);outline-offset:4px}
+  .small{font-size:14px;margin:0;opacity:.7}
+</style>
+</head>
+<body>
+<main class="screen">
+  <p class="verdict" id="verdict">친구의 1분 MBTI 결과</p>
+  <h1 class="type">ESTJ</h1>
+  <p class="tagline">규칙 안 지키는 사람 보면 바로 한마디 함. 크게. 당연한 거 아냐?</p>
+  <a class="btn" href="../../"><span>나도 1분 안에 해보기</span><span aria-hidden="true">→</span></a>
+  <p class="small">질문 최대 6개, 문제당 10초. 고민하는 순간 끝난다.</p>
+</main>
+<script>
+  // ?s=초 가 있으면 소요 시간을 보여줌
+  const s = parseInt(new URLSearchParams(location.search).get('s'), 10);
+  if (s > 0 && s < 600) document.getElementById('verdict').textContent = '친구는 ' + s + '초 만에 ' + 'ESTJ' + ' 판정';
+</script>
+</body>
+</html>

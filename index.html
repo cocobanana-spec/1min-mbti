@@ -5,6 +5,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>1분 MBTI</title>
+<meta name="description" content="질문 최대 6개, 문제당 10초. 고민하는 순간 끝난다.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="1분 MBTI">
+<meta property="og:title" content="1분 안에 끝내는 MBTI">
+<meta property="og:description" content="질문 최대 6개, 문제당 10초. 고민하는 순간 끝난다.">
+<meta property="og:url" content="https://cocobanana-spec.github.io/1min-mbti/">
+<meta property="og:image" content="https://cocobanana-spec.github.io/1min-mbti/og/default.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -409,7 +419,7 @@
     const p = $('path'); p.innerHTML = '';
     path.forEach(({ a }) => { const li = document.createElement('li'); li.textContent = a; p.appendChild(li); });
     $('toast').textContent = '';
-    $('share').dataset.text = `나는 ${secs}초 만에 ${type} 판정받음.\n"${TAGLINE[type]}"\n너도 1분 안에 해봐 → ${location.href.split('#')[0]}`;
+    $('share').dataset.text = `나는 ${secs}초 만에 ${type} 판정받음.\n"${TAGLINE[type]}"\n너도 1분 안에 해봐 → ${new URL('r/' + type + '/?s=' + secs, location.href).href}`;
     track('result', { mbti: type, seconds: secs });
     show(resultWrap);
   }
