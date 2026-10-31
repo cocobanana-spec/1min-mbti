@@ -17,4 +17,4 @@
 - [x] 목 데이터로 렌더링 확인
 - [ ] 사용자가 Supabase 프로젝트 생성 후 config.js에 URL·키 입력
 - [ ] 실제 DB 연결 후 stats() 응답 확인
-- [ ] 저장소 공개 전환 후 GitHub Pages 활성화
+- [x] 저장소 공개 전환 후 GitHub Pages 활성화 (https://cocobanana-spec.github.io/1min-mbti/)
